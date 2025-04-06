@@ -36,7 +36,5 @@ export interface Team {
   lastMatchPlayed?: string | null;
   nextMatch?: string | null;
 
-  transferBudget?: number | null;
   players: Player[];
-  transferList?: Player[] | null;
 }

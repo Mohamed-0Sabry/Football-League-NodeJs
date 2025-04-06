@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { NotificationService } from "../services/notificationService";
 
 const notificationService = new NotificationService();
@@ -40,6 +40,8 @@ export class NotificationController {
    *                   playerId:
    *                     type: integer
    *                     nullable: true
+   *                   read:
+   *                     type: boolean
    *       500:
    *         description: Server error
    *         content:
@@ -50,12 +52,64 @@ export class NotificationController {
    *                 error:
    *                   type: string
    */
-  async getNotifications(req: Request, res: Response) {
+  async getNotifications(req: Request, res: Response, next: NextFunction) {
     try {
       const notifications = await notificationService.getNotifications();
       res.json(notifications);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch notifications" });
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/notifications/unread:
+   *   get:
+   *     summary: Get unread notifications
+   *     tags: [Notifications]
+   *     responses:
+   *       200:
+   *         description: List of unread notifications
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Notification'
+   */
+  async getUnreadNotifications(req: Request, res: Response, next: NextFunction) {
+    try {
+      const notifications = await notificationService.getUnreadNotifications();
+      res.json(notifications);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/notifications/{id}/read:
+   *   post:
+   *     summary: Mark a notification as read
+   *     tags: [Notifications]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Notification ID
+   *     responses:
+   *       200:
+   *         description: Notification marked as read
+   */
+  async markAsRead(req: Request, res: Response, next: NextFunction) {
+    try {
+      const notificationId = parseInt(req.params.id);
+      await notificationService.markNotificationAsRead(notificationId);
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -85,6 +139,8 @@ export class NotificationController {
    *                     type: number
    *                   warning:
    *                     type: string
+   *                   type:
+   *                     type: string
    *       500:
    *         description: Server error
    *         content:
@@ -95,12 +151,46 @@ export class NotificationController {
    *                 error:
    *                   type: string
    */
-  async getPlayerWarnings(req: Request, res: Response) {
+  async getPlayerWarnings(req: Request, res: Response, next: NextFunction) {
     try {
       const warnings = await notificationService.getPlayerWarnings();
       res.json(warnings);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch player warnings" });
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/notifications:
+   *   post:
+   *     summary: Create a new notification
+   *     tags: [Notifications]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               title:
+   *                 type: string
+   *               message:
+   *                 type: string
+   *               type:
+   *                 type: string
+   *               playerId:
+   *                 type: integer
+   *     responses:
+   *       200:
+   *         description: Notification created successfully
+   */
+  async createNotification(req: Request, res: Response, next: NextFunction) {
+    try {
+      const notification = await notificationService.createNotification(req.body);
+      res.json(notification);
+    } catch (error) {
+      next(error);
     }
   }
 }

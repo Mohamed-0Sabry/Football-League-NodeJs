@@ -1,122 +1,89 @@
-import { db } from "../config/db";
-import { players } from "../db/schema";
+import { db } from "../db/db";
+import { playerPerformances, players, matches } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { Player } from "../types/player";
+import { Match } from "../types/match";
+
+export interface Performance {
+  id: number;
+  playerId: number;
+  matchId: number;
+  stats: {
+    goals?: number | null;
+    assists?: number | null;
+    shots?: number | null;
+    saves?: number | null;
+    passes?: number | null;
+    tackles?: number | null;
+    fouls?: number | null;
+    yellowCards?: number | null;
+    redCards?: number | null;
+    minutesPlayed?: number | null;
+    matchesPlayed?: number | null;
+  };
+  rating: number | null;
+  minutesPlayed: number | null;
+  player?: Player | null;
+  match?: Match | null;
+}
 
 export class PerformanceRepository {
-  async fetchTeamPerformance() {
-    const result = await db.execute(
-      `SELECT date, AVG(performance) as team_performance 
-       FROM matches m
-       JOIN players p ON m.id = p.match_id
-       GROUP BY date
-       ORDER BY date ASC`
-    );
-    return result.rows;
+  async fetchPerformances(): Promise<Performance[]> {
+    const dbPerformances = await db.select().from(playerPerformances);
+    return this.mapDbPerformancesToPerformances(dbPerformances);
   }
 
-  async fetchPlayerStatistics(playerId: number) {
-    const player = await db.select().from(players).where(eq(players.id, playerId));
+  async fetchPerformanceById(id: number): Promise<Performance | null> {
+    const result = await db.select().from(playerPerformances).where(eq(playerPerformances.id, id));
+    return result[0] ? this.mapDbPerformanceToPerformance(result[0]) : null;
+  }
+
+  async fetchPerformancesByPlayerId(playerId: number): Promise<Performance[]> {
+    const dbPerformances = await db.select().from(playerPerformances).where(eq(playerPerformances.playerId, playerId));
+    return this.mapDbPerformancesToPerformances(dbPerformances);
+  }
+
+  async fetchPerformancesByMatchId(matchId: number): Promise<Performance[]> {
+    const dbPerformances = await db.select().from(playerPerformances).where(eq(playerPerformances.matchId, matchId));
+    return this.mapDbPerformancesToPerformances(dbPerformances);
+  }
+
+  async createPerformance(performanceData: Omit<Performance, 'id' | 'player' | 'match'>): Promise<Performance> {
+    const result = await db.insert(playerPerformances).values(performanceData).returning();
+    return this.mapDbPerformanceToPerformance(result[0]);
+  }
+
+  async updatePerformance(id: number, performanceData: Partial<Performance>): Promise<Performance | null> {
+    await db.update(playerPerformances)
+      .set({
+        ...performanceData,
+        updatedAt: new Date()
+      })
+      .where(eq(playerPerformances.id, id));
     
-    // Mock data for FIFA-style spider graph
+    return this.fetchPerformanceById(id);
+  }
+
+  async deletePerformance(id: number): Promise<boolean> {
+    const result = await db.delete(playerPerformances).where(eq(playerPerformances.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Helper methods to map database types to application types
+  private mapDbPerformanceToPerformance(dbPerformance: any): Performance {
     return {
-      ...player[0],
-      stats: {
-        pace: Math.floor(Math.random() * 40) + 60,
-        shooting: Math.floor(Math.random() * 40) + 60, 
-        passing: Math.floor(Math.random() * 40) + 60,
-        dribbling: Math.floor(Math.random() * 40) + 60,
-        defending: Math.floor(Math.random() * 40) + 60,
-        physical: Math.floor(Math.random() * 40) + 60
-      }
+      id: dbPerformance.id,
+      playerId: dbPerformance.playerId,
+      matchId: dbPerformance.matchId,
+      stats: dbPerformance.stats || {},
+      rating: dbPerformance.rating || null,
+      minutesPlayed: dbPerformance.minutesPlayed || null,
+      player: null, // This would need to be fetched separately
+      match: null   // This would need to be fetched separately
     };
   }
 
-  async fetchAllPlayersStatistics() {
-    const allPlayers = await db.select().from(players);
-    
-    return allPlayers.map(player => ({
-      ...player,
-      stats: {
-        pace: Math.floor(Math.random() * 40) + 60,
-        shooting: Math.floor(Math.random() * 40) + 60, 
-        passing: Math.floor(Math.random() * 40) + 60,
-        dribbling: Math.floor(Math.random() * 40) + 60,
-        defending: Math.floor(Math.random() * 40) + 60,
-        physical: Math.floor(Math.random() * 40) + 60
-      }
-    }));
-  }
-
-  async fetchPlayerPredictions(playerId: number) {
-    const player = await db.select().from(players).where(eq(players.id, playerId));
-    
-    return {
-      ...player[0],
-      predictions: {
-        nextMatch: {
-          performance: (player[0].performance * 0.8 + Math.random() * 2).toFixed(1),
-          fatigue: (player[0].fatigue * 1.2).toFixed(1)
-        },
-        seasonAverage: {
-          performance: (player[0].performance * 0.9 + Math.random()).toFixed(1)
-        }
-      }
-    };
-  }
-
-  async fetchFatiguePredictions() {
-    const allPlayers = await db.select().from(players);
-    
-    return allPlayers.map(player => ({
-      ...player,
-      fatiguePrediction: {
-        nextMatch: (player.fatigue * 1.1).toFixed(1),
-        afterRestDay: (player.fatigue * 0.7).toFixed(1)
-      }
-    }));
-  }
-
-  async fetchPotentialInjuries() {
-    const allPlayers = await db.select().from(players);
-    
-    return allPlayers.map(player => ({
-      id: player.id,
-      name: player.name,
-      position: player.position,
-      currentFatigue: player.fatigue,
-      injuryRisk: player.fatigue > 80 ? "High" : player.fatigue > 60 ? "Medium" : "Low",
-      injuryProbability: player.fatigue > 80 ? Math.floor(Math.random() * 20) + 30 : 
-                          player.fatigue > 60 ? Math.floor(Math.random() * 15) + 10 : 
-                          Math.floor(Math.random() * 10)
-    }));
-  }
-
-  async fetchTrainingImprovements() {
-    return [
-      { 
-        trainingType: "High Intensity", 
-        benefits: "Improved stamina and speed",
-        recommendedFor: "Forwards and wingers",
-        risks: "Higher fatigue and injury risk"
-      },
-      { 
-        trainingType: "Technical Focus", 
-        benefits: "Better ball control and passing accuracy",
-        recommendedFor: "Midfielders",
-        risks: "Less physical development"
-      },
-      { 
-        trainingType: "Defensive Positioning", 
-        benefits: "Better team structure and fewer goals conceded",
-        recommendedFor: "Defenders and defensive midfielders",
-        risks: "Lower attacking contribution"
-      },
-      { 
-        trainingType: "Recovery Sessions", 
-        benefits: "Faster fatigue recovery and injury prevention",
-        recommendedFor: "Players with fatigue > 70%",
-        risks: "Less skill development"
-      }
-    ];
+  private mapDbPerformancesToPerformances(dbPerformances: any[]): Performance[] {
+    return dbPerformances.map(performance => this.mapDbPerformanceToPerformance(performance));
   }
 }
