@@ -1,6 +1,6 @@
 import { db } from "../db/db";
 import { players } from "../db/schema";
-import { eq, like } from "drizzle-orm";
+import { eq, like, inArray } from "drizzle-orm";
 import { Player } from "../types/player";
 
 export class PlayerRepository {
@@ -40,35 +40,61 @@ export class PlayerRepository {
     return result.length > 0;
   }
 
+  async getPlayersByIds(ids: number[]): Promise<Player[]> {
+    const dbPlayers = await db
+      .select()
+      .from(players)
+      .where(inArray(players.id, ids));
+    return this.mapDbPlayersToPlayers(dbPlayers);
+  }
+
+  async getAllPlayers(): Promise<Player[]> {
+    const dbPlayers = await db.select().from(players);
+    return this.mapDbPlayersToPlayers(dbPlayers);
+  }
+
+  async getPlayerById(id: number): Promise<Player | null> {
+    const [player] = await db
+      .select()
+      .from(players)
+      .where(eq(players.id, id));
+    return player ? this.mapDbPlayerToPlayer(player) : null;
+  }
+
   // Helper methods to map database types to application types
   private mapDbPlayerToPlayer(dbPlayer: any): Player {
     return {
       id: dbPlayer.id,
       name: dbPlayer.name,
-      age: dbPlayer.age || undefined,
+      age: dbPlayer.age || null,
       position: dbPlayer.position,
-      nationality: dbPlayer.nationality || undefined,
-      team: dbPlayer.team || undefined,
-      photo: dbPlayer.photo || undefined,
-      ability: dbPlayer.ability || undefined,
-      stamina: dbPlayer.stamina || undefined,
-      healthCondition: dbPlayer.healthCondition || undefined,
-      performance: dbPlayer.performance || undefined,
-      matchLoad: dbPlayer.matchLoad || undefined,
-      averageRating: dbPlayer.averageRating || undefined,
-      hoursPlayed: dbPlayer.hoursPlayed || undefined,
-      fatiguePercentage: dbPlayer.fatiguePercentage || undefined,
-      fitnessLevel: dbPlayer.fitnessLevel || undefined,
-      condition: dbPlayer.condition || undefined,
-      playing: dbPlayer.playing || undefined,
-      injured: dbPlayer.injured || undefined,
-      injuredTime: dbPlayer.injuredTime || undefined,
-      injuredReason: dbPlayer.injuredReason || undefined,
-      timeForRecover: dbPlayer.timeForRecover || undefined,
-      stats: dbPlayer.stats || undefined,
-      rating: dbPlayer.rating || undefined,
-      goals: dbPlayer.goals || undefined,
-      assists: dbPlayer.assists || undefined
+      nationality: dbPlayer.nationality || null,
+      team: dbPlayer.team || null,
+      photo: dbPlayer.photo || null,
+      ability: dbPlayer.ability || null,
+      stamina: dbPlayer.stamina || null,
+      healthCondition: dbPlayer.healthCondition || null,
+      performance: dbPlayer.performance || null,
+      matchLoad: dbPlayer.matchLoad || null,
+      averageRating: dbPlayer.averageRating || null,
+      hoursPlayed: dbPlayer.hoursPlayed || null,
+      fatiguePercentage: dbPlayer.fatiguePercentage || null,
+      fitnessLevel: dbPlayer.fitnessLevel || null,
+      condition: dbPlayer.condition || null,
+      playing: dbPlayer.playing || false,
+      injured: dbPlayer.injured || false,
+      injuredTime: dbPlayer.injuredTime || null,
+      injuredReason: dbPlayer.injuredReason || null,
+      timeForRecover: dbPlayer.timeForRecover || null,
+      stats: dbPlayer.stats || null,
+      rating: dbPlayer.rating || null,
+      goals: dbPlayer.goals || null,
+      assists: dbPlayer.assists || null,
+      injuryHistory: dbPlayer.injuryHistory || null,
+      medicalNotes: dbPlayer.medicalNotes || null,
+      lastMedicalCheck: dbPlayer.lastMedicalCheck || null,
+      physicalAssessment: dbPlayer.physicalAssessment || null,
+      trainingHistory: dbPlayer.trainingHistory || null
     };
   }
 

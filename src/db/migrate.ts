@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
+import * as schema from './schema';
 
 // Load environment variables
 dotenv.config();
@@ -72,7 +73,31 @@ const pool = new Pool({
 });
 
 // Create a Drizzle instance
-const db = drizzle(pool, { schema: {} });
+const db = drizzle(pool, { schema });
+
+// Function to drop all tables in the database
+async function dropAllTables() {
+  const client = await pool.connect();
+  try {
+    // Get all table names
+    const result = await client.query(`
+      SELECT tablename 
+      FROM pg_tables 
+      WHERE schemaname = 'public'
+    `);
+    
+    // Drop all tables
+    for (const row of result.rows) {
+      await client.query(`DROP TABLE IF EXISTS "${row.tablename}" CASCADE`);
+    }
+    console.log('All tables dropped successfully');
+  } catch (error) {
+    console.error('Error dropping tables:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 // Run migrations
 async function runMigrations() {
@@ -81,6 +106,11 @@ async function runMigrations() {
   try {
     // First, create the database if it doesn't exist
     await createDatabaseIfNotExists();
+    
+    // Drop all existing tables to ensure a clean slate
+    if (process.env.FORCE_MIGRATE === 'true') {
+      await dropAllTables();
+    }
     
     // Then run the migrations
     await migrate(db, { migrationsFolder: 'drizzle' });

@@ -3,6 +3,7 @@
 
 import * as dotenv from 'dotenv';
 import { resetTestDatabase } from '../config/testDb';
+import { setupTestDatabase as setupTestDb } from './testHelpers';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ export async function setupTestDatabase() {
   try {
     console.log('Setting up database for testing...');
     await resetTestDatabase();
+    await setupTestDb();
     console.log('Database setup complete');
   } catch (error) {
     console.error('Failed to set up database:', error);

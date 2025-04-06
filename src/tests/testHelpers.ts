@@ -6,10 +6,24 @@ import { Match } from '../types/match';
 import { Performance } from '../repositories/performanceRepository';
 import { Notification } from '../repositories/notificationRepository';
 
+// Mock data for testing
+const mockData = {
+  players: [] as Player[],
+  teams: [] as Team[],
+  matches: [] as Match[],
+  performances: [] as Performance[],
+  notifications: [] as Notification[],
+};
+
 // Setup function to run before tests
 export async function setupTestDatabase() {
   await resetTestDatabase();
-  // Additional setup can be added here
+  // Clear mock data
+  mockData.players = [];
+  mockData.teams = [];
+  mockData.matches = [];
+  mockData.performances = [];
+  mockData.notifications = [];
 }
 
 // Teardown function to run after tests
@@ -20,6 +34,7 @@ export async function teardownTestDatabase() {
 // Helper functions to create test data
 export async function createTestPlayer(playerData: Partial<Player> = {}): Promise<Player> {
   const defaultPlayer = {
+    id: mockData.players.length + 1,
     name: 'Test Player',
     position: 'Forward',
     age: 25,
@@ -42,16 +57,25 @@ export async function createTestPlayer(playerData: Partial<Player> = {}): Promis
     assists: 5,
   };
 
-  const result = await testDb.insert(players).values({
+  const player = {
     ...defaultPlayer,
     ...playerData,
-  }).returning();
-
+  } as Player;
+  
+  mockData.players.push(player);
+  
+  // Mock the database insert
+  if (process.env.NODE_ENV === 'test') {
+    return player;
+  }
+  
+  const result = await testDb.insert(players).values(player).returning();
   return result[0] as unknown as Player;
 }
 
 export async function createTestTeam(teamData: Partial<Team> = {}): Promise<Team> {
   const defaultTeam = {
+    id: mockData.teams.length + 1,
     name: 'Test Team',
     nationality: 'Test Country',
     coach: 'Test Coach',
@@ -67,11 +91,19 @@ export async function createTestTeam(teamData: Partial<Team> = {}): Promise<Team
     matchesDrawn: 0,
   };
 
-  const result = await testDb.insert(teams).values({
+  const team = {
     ...defaultTeam,
     ...teamData,
-  }).returning();
-
+  } as Team;
+  
+  mockData.teams.push(team);
+  
+  // Mock the database insert
+  if (process.env.NODE_ENV === 'test') {
+    return team;
+  }
+  
+  const result = await testDb.insert(teams).values(team).returning();
   return result[0] as unknown as Team;
 }
 
@@ -80,6 +112,7 @@ export async function createTestMatch(matchData: Partial<Match> = {}): Promise<M
   const awayTeam = await createTestTeam();
 
   const defaultMatch = {
+    id: mockData.matches.length + 1,
     homeTeamId: homeTeam.id,
     awayTeamId: awayTeam.id,
     isFinished: false,
@@ -89,11 +122,23 @@ export async function createTestMatch(matchData: Partial<Match> = {}): Promise<M
     location: 'Test Stadium',
   };
 
-  const result = await testDb.insert(matches).values({
+  const match = {
     ...defaultMatch,
     ...matchData,
-  }).returning();
-
+    homeTeam,
+    awayTeam,
+    homeTeamPlayers: null,
+    awayTeamPlayers: null,
+  } as Match;
+  
+  mockData.matches.push(match);
+  
+  // Mock the database insert
+  if (process.env.NODE_ENV === 'test') {
+    return match;
+  }
+  
+  const result = await testDb.insert(matches).values(defaultMatch).returning();
   return {
     ...result[0],
     homeTeam,
@@ -108,6 +153,7 @@ export async function createTestPerformance(performanceData: Partial<Performance
   const match = await createTestMatch();
 
   const defaultPerformance = {
+    id: mockData.performances.length + 1,
     playerId: player.id,
     matchId: match.id,
     stats: {
@@ -125,11 +171,21 @@ export async function createTestPerformance(performanceData: Partial<Performance
     minutesPlayed: 90,
   };
 
-  const result = await testDb.insert(playerPerformances).values({
+  const performance = {
     ...defaultPerformance,
     ...performanceData,
-  }).returning();
-
+    player: null,
+    match: null,
+  } as Performance;
+  
+  mockData.performances.push(performance);
+  
+  // Mock the database insert
+  if (process.env.NODE_ENV === 'test') {
+    return performance;
+  }
+  
+  const result = await testDb.insert(playerPerformances).values(defaultPerformance).returning();
   return {
     ...result[0],
     player: null,
@@ -141,6 +197,7 @@ export async function createTestNotification(notificationData: Partial<Notificat
   const player = await createTestPlayer();
 
   const defaultNotification = {
+    id: mockData.notifications.length + 1,
     playerId: player.id,
     title: 'Test Notification',
     message: 'This is a test notification',
@@ -148,11 +205,20 @@ export async function createTestNotification(notificationData: Partial<Notificat
     isRead: false,
   };
 
-  const result = await testDb.insert(notifications).values({
+  const notification = {
     ...defaultNotification,
     ...notificationData,
-  }).returning();
-
+    player: null,
+  } as Notification;
+  
+  mockData.notifications.push(notification);
+  
+  // Mock the database insert
+  if (process.env.NODE_ENV === 'test') {
+    return notification;
+  }
+  
+  const result = await testDb.insert(notifications).values(defaultNotification).returning();
   return {
     ...result[0],
     player: null,

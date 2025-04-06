@@ -12,16 +12,62 @@ dotenv.config();
 let testPool: Pool;
 let defaultPool: Pool;
 
+// Store mock data
+const mockData = {
+  players: [],
+  teams: [],
+  matches: [],
+  performances: [],
+  notifications: [],
+};
+
 // Create mock pools for testing
 if (process.env.NODE_ENV === 'test') {
   // Mock implementation for testing
   testPool = {
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    query: jest.fn().mockImplementation((query, params) => {
+      // Return mock data based on the query
+      if (query.includes('SELECT')) {
+        if (query.includes('players')) {
+          return Promise.resolve({ rows: mockData.players, rowCount: mockData.players.length });
+        }
+        if (query.includes('teams')) {
+          return Promise.resolve({ rows: mockData.teams, rowCount: mockData.teams.length });
+        }
+        if (query.includes('matches')) {
+          return Promise.resolve({ rows: mockData.matches, rowCount: mockData.matches.length });
+        }
+        if (query.includes('player_performances')) {
+          return Promise.resolve({ rows: mockData.performances, rowCount: mockData.performances.length });
+        }
+        if (query.includes('notifications')) {
+          return Promise.resolve({ rows: mockData.notifications, rowCount: mockData.notifications.length });
+        }
+        return Promise.resolve({ rows: [], rowCount: 0 });
+      }
+      if (query.includes('INSERT')) {
+        const table = query.match(/INSERT INTO (\w+)/)?.[1];
+        const data = params?.[0] || {};
+        if (table === 'players') mockData.players.push(data as never);
+        if (table === 'teams') mockData.teams.push(data as never);
+        if (table === 'matches') mockData.matches.push(data as never);
+        if (table === 'player_performances') mockData.performances.push(data as never);
+        if (table === 'notifications') mockData.notifications.push(data as never);
+        return Promise.resolve({ rows: [data], rowCount: 1 });
+      }
+      return Promise.resolve({ rows: [], rowCount: 1 });
+    }),
     end: jest.fn().mockResolvedValue(undefined),
   } as unknown as Pool;
   
   defaultPool = {
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    query: jest.fn().mockImplementation((query, params) => {
+      // Return mock data based on the query
+      if (query.includes('SELECT')) {
+        return Promise.resolve({ rows: [], rowCount: 0 });
+      }
+      return Promise.resolve({ rows: [], rowCount: 1 });
+    }),
     end: jest.fn().mockResolvedValue(undefined),
   } as unknown as Pool;
   
@@ -54,8 +100,13 @@ export const testDb = drizzle(testPool, { schema });
 export async function resetTestDatabase() {
   try {
     if (process.env.NODE_ENV === 'test') {
-      // For testing, just log that we're resetting the database
-      console.log('Mock: Resetting test database');
+      // For testing, clear the mock data
+      mockData.players = [];
+      mockData.teams = [];
+      mockData.matches = [];
+      mockData.performances = [];
+      mockData.notifications = [];
+      console.log('Mock: Test database reset');
       return;
     }
     

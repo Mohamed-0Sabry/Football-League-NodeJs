@@ -20,6 +20,9 @@ export interface Performance {
     redCards?: number | null;
     minutesPlayed?: number | null;
     matchesPlayed?: number | null;
+    distanceCovered?: number | null;
+    sprints?: number | null;
+    highIntensityActions?: number | null;
   };
   rating: number | null;
   minutesPlayed: number | null;
@@ -28,6 +31,79 @@ export interface Performance {
 }
 
 export class PerformanceRepository {
+  private mapDbPerformanceToPerformance(dbPerformance: any): Performance {
+    return {
+      id: dbPerformance.id,
+      playerId: dbPerformance.playerId || 0,
+      matchId: dbPerformance.matchId || 0,
+      stats: {
+        goals: dbPerformance.goals,
+        assists: dbPerformance.assists,
+        shots: dbPerformance.shots,
+        passes: dbPerformance.passes,
+        tackles: dbPerformance.tackles,
+        fouls: dbPerformance.fouls,
+        yellowCards: dbPerformance.yellowCards,
+        redCards: dbPerformance.redCards,
+        distanceCovered: dbPerformance.distanceCovered,
+        sprints: dbPerformance.sprints,
+        highIntensityActions: dbPerformance.highIntensityActions
+      },
+      rating: dbPerformance.rating,
+      minutesPlayed: dbPerformance.minutesPlayed
+    };
+  }
+
+  private mapDbPerformancesToPerformances(dbPerformances: any[]): Performance[] {
+    return dbPerformances.map(p => this.mapDbPerformanceToPerformance(p));
+  }
+
+  async getAllPerformances(): Promise<Performance[]> {
+    const dbPerformances = await db.select().from(playerPerformances);
+    return this.mapDbPerformancesToPerformances(dbPerformances);
+  }
+
+  async getPlayerPerformances(playerId: number): Promise<Performance[]> {
+    const dbPerformances = await db
+      .select()
+      .from(playerPerformances)
+      .where(eq(playerPerformances.playerId, playerId));
+    return this.mapDbPerformancesToPerformances(dbPerformances);
+  }
+
+  async getMatchPerformances(matchId: number): Promise<Performance[]> {
+    const dbPerformances = await db
+      .select()
+      .from(playerPerformances)
+      .where(eq(playerPerformances.matchId, matchId));
+    return this.mapDbPerformancesToPerformances(dbPerformances);
+  }
+
+  async createPerformance(data: Partial<Performance>): Promise<Performance> {
+    const [dbPerformance] = await db
+      .insert(playerPerformances)
+      .values({
+        playerId: data.playerId,
+        matchId: data.matchId,
+        stats: data.stats || {},
+        rating: data.rating,
+        minutesPlayed: data.minutesPlayed,
+        goals: data.stats?.goals || 0,
+        assists: data.stats?.assists || 0,
+        shots: data.stats?.shots || 0,
+        passes: data.stats?.passes || 0,
+        tackles: data.stats?.tackles || 0,
+        fouls: data.stats?.fouls || 0,
+        yellowCards: data.stats?.yellowCards || 0,
+        redCards: data.stats?.redCards || 0,
+        distanceCovered: data.stats?.distanceCovered || 0,
+        sprints: data.stats?.sprints || 0,
+        highIntensityActions: data.stats?.highIntensityActions || 0
+      })
+      .returning();
+    return this.mapDbPerformanceToPerformance(dbPerformance);
+  }
+
   async fetchPerformances(): Promise<Performance[]> {
     const dbPerformances = await db.select().from(playerPerformances);
     return this.mapDbPerformancesToPerformances(dbPerformances);
@@ -48,11 +124,6 @@ export class PerformanceRepository {
     return this.mapDbPerformancesToPerformances(dbPerformances);
   }
 
-  async createPerformance(performanceData: Omit<Performance, 'id' | 'player' | 'match'>): Promise<Performance> {
-    const result = await db.insert(playerPerformances).values(performanceData).returning();
-    return this.mapDbPerformanceToPerformance(result[0]);
-  }
-
   async updatePerformance(id: number, performanceData: Partial<Performance>): Promise<Performance | null> {
     await db.update(playerPerformances)
       .set({
@@ -67,23 +138,5 @@ export class PerformanceRepository {
   async deletePerformance(id: number): Promise<boolean> {
     const result = await db.delete(playerPerformances).where(eq(playerPerformances.id, id)).returning();
     return result.length > 0;
-  }
-
-  // Helper methods to map database types to application types
-  private mapDbPerformanceToPerformance(dbPerformance: any): Performance {
-    return {
-      id: dbPerformance.id,
-      playerId: dbPerformance.playerId,
-      matchId: dbPerformance.matchId,
-      stats: dbPerformance.stats || {},
-      rating: dbPerformance.rating || null,
-      minutesPlayed: dbPerformance.minutesPlayed || null,
-      player: null, // This would need to be fetched separately
-      match: null   // This would need to be fetched separately
-    };
-  }
-
-  private mapDbPerformancesToPerformances(dbPerformances: any[]): Performance[] {
-    return dbPerformances.map(performance => this.mapDbPerformanceToPerformance(performance));
   }
 }

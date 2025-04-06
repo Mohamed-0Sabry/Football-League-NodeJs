@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { PlayerService } from "../services/playerService";
-import { Player } from "../types/player";
 
 const playerService = new PlayerService();
 

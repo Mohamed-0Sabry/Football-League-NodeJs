@@ -2,10 +2,12 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "CommonJS",
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true
-  }
+  },
+  "include": ["src/**/*", "drizzle.config.ts", "server.ts"],
+  "exclude": ["node_modules", "dist"]
 }

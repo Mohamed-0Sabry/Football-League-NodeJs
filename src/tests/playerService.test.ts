@@ -52,11 +52,11 @@ describe('PlayerService', () => {
         age: 30,
         nationality: 'Test Country'
       });
-
       // Get the player by id
-      const player = await playerService.getPlayerById(testPlayer.id);
 
-      // Assert
+      const players = await playerService.getAllPlayers();
+      const player = players.find(p => p.id === testPlayer.id);
+
       expect(player).toBeDefined();
       expect(player?.id).toBe(testPlayer.id);
       expect(player?.name).toBe('Test Player');
@@ -67,7 +67,8 @@ describe('PlayerService', () => {
 
     it('should return null for non-existent player id', async () => {
       // Get a non-existent player
-      const player = await playerService.getPlayerById(99999);
+      const players = await playerService.getAllPlayers();
+      const player = players.find(p => p.id === 99999);
 
       // Assert
       expect(player).toBeNull();

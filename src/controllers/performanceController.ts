@@ -43,9 +43,9 @@ export class PerformanceController {
   async getTeamPerformance(req: Request, res: Response) {
     try {
       const performance = await performanceService.getTeamPerformance();
-      res.json(performance);
+      res.json({ success: true, performance });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch team performance" });
+      res.status(500).json({ success: false, error: "Failed to fetch team performance" });
     }
   }
 
@@ -96,9 +96,9 @@ export class PerformanceController {
     try {
       const playerId = parseInt(req.params.id);
       const statistics = await performanceService.getPlayerStatistics(playerId);
-      res.json(statistics);
+      res.json({ success: true, statistics });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch player statistics" });
+      res.status(500).json({ success: false, error: "Failed to fetch player statistics" });
     }
   }
 
@@ -145,9 +145,9 @@ export class PerformanceController {
   async getAllPlayersStatistics(req: Request, res: Response) {
     try {
       const statistics = await performanceService.getAllPlayersStatistics();
-      res.json(statistics);
+      res.json({ success: true, statistics });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch all players statistics" });
+      res.status(500).json({ success: false, error: "Failed to fetch all players statistics" });
     }
   }
 
@@ -192,9 +192,9 @@ export class PerformanceController {
     try {
       const playerId = parseInt(req.params.id);
       const predictions = await performanceService.getPlayerPredictions(playerId);
-      res.json(predictions);
+      res.json({ success: true, predictions });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch player predictions" });
+      res.status(500).json({ success: false, error: "Failed to fetch player predictions" });
     }
   }
 
@@ -235,9 +235,9 @@ export class PerformanceController {
   async getFatiguePredictions(req: Request, res: Response) {
     try {
       const predictions = await performanceService.getFatiguePredictions();
-      res.json(predictions);
+      res.json({ success: true, predictions });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch fatigue predictions" });
+      res.status(500).json({ success: false, error: "Failed to fetch fatigue predictions" });
     }
   }
 
@@ -256,6 +256,44 @@ export class PerformanceController {
       res.json(improvements);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch training improvements" });
+    }
+  }
+
+  async getAllPerformances(req: Request, res: Response) {
+    try {
+      const performances = await performanceService.getAllPerformances();
+      res.json({ success: true, performances });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch performances" });
+    }
+  }
+
+  async getPlayerPerformances(req: Request, res: Response) {
+    try {
+      const playerId = parseInt(req.params.playerId);
+      const performances = await performanceService.getPlayerPerformances(playerId);
+      res.json({ success: true, performances });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch player performances" });
+    }
+  }
+
+  async getMatchPerformances(req: Request, res: Response) {
+    try {
+      const matchId = parseInt(req.params.matchId);
+      const performances = await performanceService.getMatchPerformances(matchId);
+      res.json({ success: true, performances });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch match performances" });
+    }
+  }
+
+  async createPerformance(req: Request, res: Response) {
+    try {
+      const performance = await performanceService.createPerformance(req.body);
+      res.status(201).json({ success: true, performance });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to create performance" });
     }
   }
 }

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, boolean, jsonb, text, real } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, integer, timestamp, boolean, jsonb, text, real, date } from "drizzle-orm/pg-core";
 
 // Players table
 export const players = pgTable("players", {
@@ -28,6 +28,11 @@ export const players = pgTable("players", {
   rating: jsonb("rating"),
   goals: integer("goals").default(0),
   assists: integer("assists").default(0),
+  injuryHistory: jsonb("injury_history"),
+  medicalNotes: text("medical_notes"),
+  lastMedicalCheck: timestamp("last_medical_check"),
+  physicalAssessment: jsonb("physical_assessment"),
+  trainingHistory: jsonb("training_history"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -97,6 +102,17 @@ export const playerPerformances = pgTable("player_performances", {
   stats: jsonb("stats").notNull(),
   rating: real("rating"),
   minutesPlayed: integer("minutes_played"),
+  goals: integer("goals").default(0),
+  assists: integer("assists").default(0),
+  shots: integer("shots").default(0),
+  passes: integer("passes").default(0),
+  tackles: integer("tackles").default(0),
+  fouls: integer("fouls").default(0),
+  yellowCards: integer("yellow_cards").default(0),
+  redCards: integer("red_cards").default(0),
+  distanceCovered: real("distance_covered"),
+  sprints: integer("sprints"),
+  highIntensityActions: integer("high_intensity_actions"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -116,10 +132,16 @@ export const notifications = pgTable("notifications", {
 export const playerStatistics = pgTable("player_statistics", {
   id: serial("id").primaryKey(),
   playerId: integer("player_id").references(() => players.id),
-  pace: integer("pace").notNull(),
-  shooting: integer("shooting").notNull(),
-  passing: integer("passing").notNull(),
-  dribbling: integer("dribbling").notNull(),
-  defending: integer("defending").notNull(),
-  physical: integer("physical").notNull(),
+  pace: integer("pace"),
+  shooting: integer("shooting"),
+  passing: integer("passing"),
+  dribbling: integer("dribbling"),
+  defending: integer("defending"),
+  physical: integer("physical"),
+  attacking: integer("attacking"),
+  midfield: integer("midfield"),
+  goalkeeping: integer("goalkeeping"),
+  overall: integer("overall"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });

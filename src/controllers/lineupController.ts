@@ -59,8 +59,8 @@ export class LineupController {
    */
   async updateTeamLineup(req: Request, res: Response, next: NextFunction) {
     try {
-      const { playerId, playing, substitution } = req.body;
-      await lineupService.updateTeamLineup(playerId, playing, substitution);
+      const { playerId, playing } = req.body;
+      await lineupService.updateTeamLineup(playerId, playing);
       res.json({ success: true, message: "Lineup updated successfully" });
     } catch (error) {
       next(error);
@@ -81,6 +81,36 @@ export class LineupController {
     try {
       const plans = await lineupService.getLineupPlan();
       res.json({ success: true, plans });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMatchLineups(req: Request, res: Response, next: NextFunction) {
+    try {
+      const matchId = parseInt(req.params.matchId);
+      const lineups = await lineupService.getMatchLineups(matchId);
+      res.json({ success: true, lineups });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTeamMatchLineup(req: Request, res: Response, next: NextFunction) {
+    try {
+      const teamId = parseInt(req.params.teamId);
+      const matchId = parseInt(req.params.matchId);
+      const lineup = await lineupService.getTeamMatchLineup(teamId, matchId);
+      res.json({ success: true, lineup });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createLineup(req: Request, res: Response, next: NextFunction) {
+    try {
+      const lineup = await lineupService.createLineup(req.body);
+      res.status(201).json({ success: true, lineup });
     } catch (error) {
       next(error);
     }
