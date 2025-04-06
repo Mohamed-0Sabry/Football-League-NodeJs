@@ -18,7 +18,7 @@
     "db:studio": "drizzle-kit studio",
     "build": "tsc",
     "start": "node dist/server.js",
-    "start:prod": "NODE_ENV=production node dist/server.js",
+    "start:prod": "set NODE_ENV=production && node dist/server.js",
     "clean": "rimraf dist",
     "prebuild": "npm run clean"
   },
