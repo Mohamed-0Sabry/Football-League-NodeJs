@@ -70,17 +70,53 @@ export class PlayerService {
   }
 
   private calculateInjuryRisk(player: Player): number {
-    // Implement injury risk calculation based on:
-    // - Current fatigue
-    // - Match load
-    // - Recent injuries
-    // - Physical condition
-    const fatigueRisk = (player.fatiguePercentage || 0) / 100;
-    const matchLoadRisk = (player.matchLoad || 0) / 100;
-    const healthRisk = player.healthCondition === 'poor' ? 0.3 : 0;
-    
-    return Math.min(1, fatigueRisk + matchLoadRisk + healthRisk);
+    let riskScore = 0;
+  
+    // Matches in last 10 days
+    if (player.stats?.matchesLast10Days && player.stats.matchesLast10Days > 1) {
+      riskScore += player.stats.matchesLast10Days; // +1 per match
+    }
+  
+    // Distance covered per match
+    if (player.stats?.distanceCovered && player.stats.distanceCovered > 10) {
+      riskScore += 1;
+    }
+  
+    // Sprint count
+    if (player.stats?.sprints && player.stats.sprints > 20) {
+      riskScore += 1;
+    }
+  
+    // Previous injuries
+    if (player.stats?.injuriesThisSeason && player.stats.injuriesThisSeason >= 2) {
+      riskScore += 1;
+    }
+  
+    // Rest ratio (days rest / days played)
+    if (player.stats?.restRatio && player.stats.restRatio < 0.3) {
+      riskScore += 1;
+    }
+  
+    // Age
+    if (player.age && player.age > 30) {
+      riskScore += 1;
+    }
+  
+    // Position-based risk
+    if (["Defender", "Winger", "Fullback", "Wingback"].includes(player.position)) {
+      riskScore += 1;
+    }
+  
+    // Played a full match recently
+    if (player.stats?.playedFullMatch) {
+      riskScore += 1;
+    }
+  
+    // Normalize to percentage
+    const maxScore = 9; // 9 total risk factors
+    return Math.min(1, riskScore / maxScore);
   }
+  
 
   private calculateFatiguePrediction(player: Player): number {
     // Implement fatigue prediction based on:

@@ -22,7 +22,7 @@ const defaultPool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  password: process.env.DB_PASSWORD || '1234',
   database: 'postgres', // Connect to the default postgres database
   ssl: sslConfig,
 });
@@ -66,13 +66,13 @@ const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  password: process.env.DB_PASSWORD || '1234',
   database: dbName,
   ssl: sslConfig,
 });
 
 // Create a Drizzle instance
-const db = drizzle(pool);
+const db = drizzle(pool, { schema: {} });
 
 // Run migrations
 async function runMigrations() {

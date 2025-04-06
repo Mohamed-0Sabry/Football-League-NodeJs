@@ -4,8 +4,8 @@
 import * as dotenv from 'dotenv';
 import { resetTestDatabase } from '../config/testDb';
 
-// Load test environment variables
-dotenv.config({ path: '.env.test' });
+// Load environment variables
+dotenv.config();
 
 // Set test environment
 process.env.NODE_ENV = 'test';
@@ -17,21 +17,20 @@ jest.setTimeout(parseInt(process.env.JEST_TIMEOUT || '30000'));
 // Mock console methods to reduce noise during tests
 global.console = {
   ...console,
-  // Uncomment these if you want to suppress logs during tests
-  // log: jest.fn(),
-  // info: jest.fn(),
-  // warn: jest.fn(),
-  // error: jest.fn(),
+  log: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
 };
 
-// Reset the test database before all tests
-beforeAll(async () => {
+// Export a function to reset the database
+export async function setupTestDatabase() {
   try {
-    console.log('Setting up test database...');
+    console.log('Setting up database for testing...');
     await resetTestDatabase();
-    console.log('Test database setup complete');
+    console.log('Database setup complete');
   } catch (error) {
-    console.error('Failed to set up test database:', error);
+    console.error('Failed to set up database:', error);
     throw error;
   }
-}); 
+} 

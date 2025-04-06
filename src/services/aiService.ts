@@ -1,12 +1,6 @@
 import openai from "../config/openai";
-import { Player } from "../types/player";
-
-interface TeamData {
-  avgFatigue: number;
-  avgPerformance: number;
-  recentResult: string;
-  players: Player[];
-}
+import { Player, TeamData } from "../types/player";
+import { AI_PROMPTS } from "../config/aiPrompts";
 
 export class AIService {
   async getPlanSuggestions(teamData: TeamData): Promise<{
@@ -20,21 +14,11 @@ export class AIService {
       messages: [
         { 
           role: "system", 
-          content: "You are an AI football coach specializing in tactical analysis and team formation optimization." 
+          content: AI_PROMPTS.COACH.SYSTEM
         },
         { 
           role: "user", 
-          content: `Analyze this team data and suggest the optimal formation and tactics:
-          Average Team Fatigue: ${teamData.avgFatigue}/100
-          Average Team Performance: ${teamData.avgPerformance}/100
-          Recent Match Result: ${teamData.recentResult}
-          Players: ${JSON.stringify(teamData.players.map(p => ({
-            id: p.id,
-            name: p.name,
-            position: p.position,
-            performance: p.performance,
-            fatiguePercentage: p.fatiguePercentage
-          })))}`
+          content: AI_PROMPTS.COACH.USER(teamData)
         }
       ]
     });
@@ -42,7 +26,6 @@ export class AIService {
     const suggestion = response.choices[0]?.message?.content || "No suggestion available.";
     
     // Parse the AI response into structured data
-    // This is a simplified example - in production, you'd want more robust parsing
     return {
       formation: "4-3-3", // Default fallback
       tactics: "Possession-based attacking football",
@@ -65,51 +48,65 @@ export class AIService {
       messages: [
         { 
           role: "system", 
-          content: "You are an AI sports medicine specialist specializing in football player injury prevention and risk assessment." 
+          content: AI_PROMPTS.SPORTS_MEDICINE.SYSTEM
         },
         { 
           role: "user", 
-          content: `Analyze this player's data and provide detailed injury risk assessment:
-          Name: ${playerData.name}
-          Position: ${playerData.position}
-          Age: ${playerData.age}
-          Fatigue Level: ${playerData.fatiguePercentage}/100
-          Recent Performance: ${playerData.performance}/100
-          Match Load: ${playerData.matchLoad}/100
-          Health Condition: ${playerData.healthCondition}
-          Recent Injuries: ${playerData.injured ? 'Yes' : 'No'}`
+          content: AI_PROMPTS.SPORTS_MEDICINE.USER(playerData)
         }
-      ]
+      ],
+      response_format: { type: "json_object" }
     });
 
-    const assessment = response.choices[0]?.message?.content || "No assessment available.";
-    
-    // Calculate risk level based on player data
-    const riskScore = (
-      (playerData.fatiguePercentage || 0) * 0.4 +
-      (playerData.matchLoad || 0) * 0.3 +
-      (playerData.injured ? 30 : 0)
-    ) / 100;
-
-    return {
-      riskLevel: riskScore > 0.7 ? "High" : riskScore > 0.4 ? "Medium" : "Low",
-      probability: riskScore,
-      recommendations: [
-        "Increase recovery time between matches",
-        "Focus on injury prevention exercises",
-        "Monitor fatigue levels closely"
-      ],
-      potentialInjuries: [
-        {
-          type: "Muscle Strain",
-          probability: Math.min(1, riskScore * 1.2)
-        },
-        {
-          type: "Joint Stress",
-          probability: Math.min(1, riskScore * 0.8)
-        }
-      ]
-    };
+    try {
+      const assessment = JSON.parse(response.choices[0]?.message?.content || "{}");
+      
+      // Validate and ensure the response matches the expected structure
+      return {
+        riskLevel: assessment.riskLevel || "Low",
+        probability: Math.min(1, Math.max(0, assessment.probability || 0)),
+        recommendations: Array.isArray(assessment.recommendations) ? assessment.recommendations : [
+          "Increase recovery time between matches",
+          "Focus on injury prevention exercises",
+          "Monitor fatigue levels closely"
+        ],
+        potentialInjuries: Array.isArray(assessment.potentialInjuries) ? assessment.potentialInjuries.map((injury: { type: string; probability: number }) => ({
+          type: injury.type || "Unknown",
+          probability: Math.min(1, Math.max(0, injury.probability || 0))
+        })) : [
+          {
+            type: "Muscle Strain",
+            probability: 0.3
+          },
+          {
+            type: "Joint Stress",
+            probability: 0.2
+          }
+        ]
+      };
+    } catch (error) {
+      console.error("Error parsing AI response:", error);
+      // Return a safe default response if parsing fails
+      return {
+        riskLevel: "Low",
+        probability: 0.3,
+        recommendations: [
+          "Increase recovery time between matches",
+          "Focus on injury prevention exercises",
+          "Monitor fatigue levels closely"
+        ],
+        potentialInjuries: [
+          {
+            type: "Muscle Strain",
+            probability: 0.3
+          },
+          {
+            type: "Joint Stress",
+            probability: 0.2
+          }
+        ]
+      };
+    }
   }
 
   async getTrainingRecommendations(teamData: TeamData): Promise<{
@@ -130,22 +127,11 @@ export class AIService {
       messages: [
         { 
           role: "system", 
-          content: "You are an AI training specialist for football teams, specializing in periodization and performance optimization." 
+          content: AI_PROMPTS.TRAINING_SPECIALIST.SYSTEM
         },
         { 
           role: "user", 
-          content: `Based on the team's data:
-          Average Fatigue: ${teamData.avgFatigue}/100
-          Average Performance: ${teamData.avgPerformance}/100
-          Recent Match Result: ${teamData.recentResult}
-          Players: ${JSON.stringify(teamData.players.map(p => ({
-            id: p.id,
-            name: p.name,
-            position: p.position,
-            performance: p.performance,
-            fatiguePercentage: p.fatiguePercentage
-          })))}
-          Provide a detailed weekly training plan with focus areas, schedule, and expected outcomes.`
+          content: AI_PROMPTS.TRAINING_SPECIALIST.USER(teamData)
         }
       ]
     });
